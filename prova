@@ -10,10 +10,10 @@ As seguintes funcionalidades foram solicitadas pelo cliente e deverão ser descr
 	R: 
 	
 	CREATE TABLE IF NOT EXISTS clientes (
-	id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-	nome VARCHAR(255) NOT NULL,
-	cpf CHAR(11) NOT NULL,
-	telefone VARCHAR(11) NOT NULL
+	    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	    nome VARCHAR(255) NOT NULL,
+	    cpf CHAR(11) NOT NULL,
+	    telefone VARCHAR(11) NOT NULL
 	);
 
 3. Criar uma tabela para armazenar as informações dos produtos. Nessa tabela deve ser armazenada a descrição do produto que não pode ser nula e deve armazenar no máximo 100 caracteres, e por fim uma coluna que armazene o valor unitário do produto que também deve ser obrigatório.
@@ -21,44 +21,131 @@ As seguintes funcionalidades foram solicitadas pelo cliente e deverão ser descr
 	R:
 	
 	CREATE TABLE IF NOT EXISTS produtos (
-	id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-	desc VARCHAR(100) NOT NULL,
-	valorUnit DECIMAL(15,2) NOT NULL
+	    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	    descr VARCHAR(100) NOT NULL,
+	    valorUnit DECIMAL(15,2) NOT NULL
 	);
 
 4. Para armazenar as informações dos pedidos, precisamos criar duas novas tabelas, uma com o cabeçalho do pedido e outra com os itens do pedido. Na tabela de cabeçalho devemos armazenar o código do cliente, e a data que o pedido foi emitido, importante notar é que todos os campos dessa tabela devem ser obrigatórios. Já na tabela de itens do pedido deve ser armazenado o código do pedido e o código do item, o valor unitário do item, a quantidade de itens adquiridos na compra e um percentual de desconto no item da compra, apenas o percentual de desconto pode ser nulo.
+
+	CREATE TABLE cabecalho (
+	    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	    codCliente INT NOT NULL,
+  	    dataPed DATE NOT NULL,
+	    FOREIGN KEY (codCliente) REFERENCES clientes(id)
+	); 
+	
+	CREATE TABLE itensPed (
+	    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	    codPed INT NOT NULL,
+	    codItem INT NOT NULL,
+	    qtdItens INT NOT NULL,
+	    percentDesc INT,
+	    FOREIGN KEY (codItem) REFERENCES produtos(id),
+	    FOREIGN KEY (codPed) REFERENCES cabecalho(id)
+	); 
 
 Exercicio 2
 
 Devemos inserir no nosso banco de dados as informações do antigo sistema do cliente. 
 (table)
 
+INSERT INTO produtos (descr,valorUnit)
+VALUES  ('JOALHEIRA',15.00),
+        ('LUVA DE GOLEIRO',45.00),
+        ('BERMUDA MASCULINA',89.90),
+        ('OCULOS DE NATACAO',7.50),
+        ('SUNGA',35.00),
+        ('BOLA FUTSAL',49.30);
+
 Tabela clientes
 (table)
+
+INSERT INTO clientes (nome,cpf,telefone)
+VALUES  ('José','62066653055','46999999992'),
+        ('Maria Salete','09914853005','46999889992'),
+        ('João','31509250026','46997799992'),
+        ('Maria Paula','75233946041','46999962992');
 
 Tabela de pedidos
 (table)
 
+INSERT INTO cabecalho (codCliente,dataPed)
+VALUES  (1,STR_TO_DATE('01/01/2019', '%d-%m-%Y')),
+        (1,STR_TO_DATE('05/03/2019', '%d-%m-%Y')),
+        (1,STR_TO_DATE('20/08/2019', '%d-%m-%Y')),
+        (1,STR_TO_DATE('12/07/2019', '%d-%m-%Y')),
+        (1,STR_TO_DATE('13/08/2019', '%d-%m-%Y')),
+        (2,STR_TO_DATE('13/08/2019', '%d-%m-%Y')),
+        (2,STR_TO_DATE('14/06/2019', '%d-%m-%Y')),
+        (2,STR_TO_DATE('15/08/2019', '%d-%m-%Y')),
+        (2,STR_TO_DATE('05/03/2019', '%d-%m-%Y')),
+        (4,STR_TO_DATE('05/03/2019', '%d-%m-%Y'));
+
 Tabela de itens dos pedidos
 (table)
+
+INSERT INTO itensPed (codPed,codItem,qtdItens,percentDesc)
+VALUES  (1,1,1,NULL),
+        (1,2,1,NULL),
+        (2,3,2,5),
+        (2,5,1,NULL),
+        (2,4,7,NULL),
+        (3,4,25,23),
+        (4,6,3,15),
+        (4,1,2,2),
+        (5,1,8,NULL),
+        (6,5,14,15),
+        (7,1,2,2),
+        (7,2,9,17),
+        (8,1,4,NULL),
+        (9,4,15,NULL),
+        (10,1,7,NULL);
 
 Exercicio 3:
 
 Retorne uma lista dos clientes que contém “ari” no nome.
-
-
+	R:
+	SELECT * FROM clientes WHERE nome LIKE '%ari%';
+	
 2. Retorne uma lista dos clientes que começam com o nome “ma”.
-
+	R:
+	SELECT * FROM clientes WHERE nome LIKE 'ma%';
+	
 3. Retorne uma lista dos clientes que terminem com o nome “ula”.
-
+	R:
+	SELECT * FROM clientes WHERE nome LIKE '%ula';
+	
 4. Retorne uma lista dos clientes concatenando o código do mesmo com o nome, separando por hífen.
+	R:	
+	SELECT CONCAT_WS(
+                '-',
+                id,
+                nome
+           ) AS codANDnome 
+	FROM clientes;
 
 5. Retorne uma lista dos clientes concatenando o nome da coluna com o valor da mesma. Ex: ‘ID_CLIENTE: 1’, ’NOME: Jóse‘...
-
+	R:
+	SELECT CONCAT('id: ', id, 'nome: ', nome, 'cpf: ', cpf, 'telefone: ', telefone) AS dadosCliente FROM clientes;
+	
 6. Retorne uma lista com o nome e telefone dos clientes que possuem pedidos, distinguindo os resultados retornados?
+	R:
+        SELECT clientes.nome, clientes.telefone
+            FROM clientes
+        JOIN cabecalho
+        ON clientes.id = cabecalho.codCliente
+        GROUP BY clientes.id;
 
 7. Retorne uma lista com a descrição e valor unitário do item do pedido que tenham vínculos com pedidos, ordenando a lista por valor unitário de forma decrescente.
-
+	R:
+	SELECT produtos.descr, produtos.valorUnit
+            FROM produtos
+        JOIN itensPed
+        ON produtos.id = itensPed.codItem
+        GROUP BY produtos.id
+        ORDER BY produtos.valorUnit DESC;
+        
 8. Retorne uma lista com o nome dos clientes e a quantidade de pedidos de cada um, ordenado a lista pelos clientes que mais possuem pedidos?
 
 9. Retorne uma lista de todos os pedidos realizados, contando a quantidade de itens de cada pedido.
@@ -86,3 +173,110 @@ Retorne uma lista dos clientes que contém “ari” no nome.
 20 . Em qual data foi emitido mais pedidos?
 
 21. Qual foi o segundo dia que mais pedidos foram emitidos?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	CREATE TABLE IF NOT EXISTS clientes (
+	    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	    nome VARCHAR(255) NOT NULL,
+	    cpf CHAR(11) NOT NULL,
+	    telefone VARCHAR(11) NOT NULL
+	);
+	
+	INSERT INTO clientes (nome,cpf,telefone)
+        VALUES  ('José','62066653055','46999999992'),
+            ('Maria Salete','09914853005','46999889992'),
+            ('João','31509250026','46997799992'),
+            ('Maria Paula','75233946041','46999962992');
+
+    CREATE TABLE cabecalho (
+	    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	    codCliente INT NOT NULL,
+  	    dataPed DATE NOT NULL,
+	    FOREIGN KEY (codCliente) REFERENCES clientes(id)
+	); 
+	
+	INSERT INTO cabecalho (codCliente,dataPed)
+    VALUES  (1,'2019-01-01'),
+        (1,'2019-01-01'),
+        (1,'2019-01-01'),
+        (1,'2019-01-01'),
+        (1,'2019-01-01'),
+        (2,'2019-01-01'),
+        (2,'2019-01-01'),
+        (4,'2019-01-01');
+        
+    CREATE TABLE IF NOT EXISTS produtos (
+	    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	    descr VARCHAR(100) NOT NULL,
+	    valorUnit DECIMAL(15,2) NOT NULL
+	);
+        
+INSERT INTO produtos (descr,valorUnit)
+VALUES  ('JOALHEIRA',15.00),
+        ('LUVA DE GOLEIRO',45.00),
+        ('BERMUDA MASCULINA',89.90),
+        ('OCULOS DE NATACAO',7.50),
+        ('SUNGA',35.00),
+        ('BOLA FUTSAL',49.30);
+        
+    CREATE TABLE itensPed (
+	    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	    codPed INT NOT NULL,
+	    codItem INT NOT NULL,
+	    qtdItens INT NOT NULL,
+	    percentDesc INT,
+	    FOREIGN KEY (codItem) REFERENCES produtos(id),
+	    FOREIGN KEY (codPed) REFERENCES cabecalho(id)
+	); 
+	
+	
+	INSERT INTO itensPed (codPed,codItem,qtdItens,percentDesc)
+VALUES  (1,1,1,NULL),
+        (1,2,1,NULL),
+        (2,3,2,5),
+        (2,5,1,NULL),
+        (2,4,7,NULL),
+        (3,4,25,23),
+        (4,6,3,15),
+        (4,1,2,2),
+        (5,1,8,NULL),
+        (6,5,14,15),
+        (7,1,2,2),
+        (7,2,9,17),
+        (8,1,4,NULL),
+        (9,4,15,NULL),
+        (10,1,7,NULL);
+	
+	
+SELECT clientes.nome, itensPed.qtdItens
+FROM clientes
+JOIN itensPed
+ON clientes.cliente_id = dados_clientes.cliente_id_;
+        
+        
